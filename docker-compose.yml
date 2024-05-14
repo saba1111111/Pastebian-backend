@@ -10,13 +10,13 @@ services:
     ports:
       - '8080:8080'
     volumes:
-      - .:/usr/src/apps
+      - .:/usr/src/app
     depends_on:
       - dynamodb-local
 
   dynamodb-local:
     command: '-jar DynamoDBLocal.jar -sharedDb -dbPath ./data'
-    image: 'amazon/dynamodb-local:latest'
+    image: 'amazon/dynamodb-local:2.0.0'
     container_name: dynamodb-local
     ports:
       - '8000:8000'

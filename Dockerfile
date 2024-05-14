@@ -1,4 +1,4 @@
-FROM node:18 as development
+FROM node:20.9.0 as development
 
 WORKDIR /usr/src/app
 
@@ -9,7 +9,7 @@ COPY . .
 
 RUN npm run build 
 
-FROM node:18 as production
+FROM node:20.9.0 as production
 
 WORKDIR /usr/src/app
 
