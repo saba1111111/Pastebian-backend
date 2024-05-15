@@ -5,7 +5,7 @@ export const TABLES = {
 };
 
 const PastebianContentTableAttributes = {
-  contentId: 'contentId',
+  id: 'id',
   expireAt: 'expireAt',
 };
 
@@ -13,7 +13,7 @@ export const PASTEBIAN_CONTENT_TABLE_CONFIGURATION: ICreateTableCredentials = {
   TableName: TABLES.PASTEBIAN_TABLE,
   Columns: [
     {
-      AttributeName: PastebianContentTableAttributes.contentId,
+      AttributeName: PastebianContentTableAttributes.id,
       AttributeType: 'S',
     },
     {
@@ -22,7 +22,7 @@ export const PASTEBIAN_CONTENT_TABLE_CONFIGURATION: ICreateTableCredentials = {
     },
   ],
   keys: {
-    PK: PastebianContentTableAttributes.contentId,
+    PK: PastebianContentTableAttributes.id,
     SK: PastebianContentTableAttributes.expireAt,
   },
   BillingMode: {

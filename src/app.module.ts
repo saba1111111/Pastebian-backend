@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from 'libs/database';
+import { ContentModule } from './content/content.module';
 
 @Module({
   imports: [
@@ -8,6 +9,7 @@ import { DatabaseModule } from 'libs/database';
       isGlobal: true,
     }),
     DatabaseModule,
+    ContentModule,
   ],
   controllers: [],
   providers: [],

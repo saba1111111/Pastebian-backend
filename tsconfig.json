@@ -29,6 +29,12 @@
       ],
       "libs/common/*": [
         "libs/common/src/*"
+      ],
+      "libs/content": [
+        "libs/content/src"
+      ],
+      "libs/content/*": [
+        "libs/content/src/*"
       ]
     }
   }

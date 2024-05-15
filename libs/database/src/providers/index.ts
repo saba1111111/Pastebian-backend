@@ -23,17 +23,11 @@ export const DatabaseProviders = [
       });
 
       try {
-        const table = await databaseClient.send(
-          findTable(TABLES.PASTEBIAN_TABLE),
-        );
-
-        if (!table) {
-          await databaseClient.send(
-            createTable(PASTEBIAN_CONTENT_TABLE_CONFIGURATION),
-          );
-        }
+        await databaseClient.send(findTable(TABLES.PASTEBIAN_TABLE));
       } catch (error) {
-        console.log(error);
+        await databaseClient.send(
+          createTable(PASTEBIAN_CONTENT_TABLE_CONFIGURATION),
+        );
       }
 
       return databaseClient;
