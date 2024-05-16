@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CONTENT_REPOSITORY_TOKEN } from '../constants';
 import {
+  IContent,
   IContentRepository,
   ICreateContentServiceCredentials,
 } from '../interfaces';
@@ -9,6 +10,7 @@ import { handleError } from 'libs/common/helpers';
 import {
   ContentExpiredException,
   ContentNotFoundException,
+  DeletionFailedException,
 } from '../exceptions';
 
 @Injectable()
@@ -36,10 +38,7 @@ export class ContentService {
 
   public async findById(id: string) {
     try {
-      const content = await this.contentRepository.findItemById(id);
-      if (!content) {
-        throw new ContentNotFoundException(id);
-      }
+      const content = await this.getItemOrThrow(id);
 
       if (content.expireAt <= Date.now()) {
         await this.contentRepository.deleteItem({
@@ -54,5 +53,34 @@ export class ContentService {
     } catch (error) {
       handleError(error);
     }
+  }
+
+  public async deleteById(id: string) {
+    try {
+      const content = await this.getItemOrThrow(id);
+
+      const numberOfItemsDeleted = await this.contentRepository.deleteItem({
+        id,
+        expireAt: content.expireAt,
+      });
+
+      if (numberOfItemsDeleted === 0) {
+        throw new DeletionFailedException(id);
+      }
+
+      return;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  public async getItemOrThrow(id: string): Promise<IContent> {
+    const content = await this.contentRepository.findItemById(id);
+
+    if (!content) {
+      throw new ContentNotFoundException(id);
+    }
+
+    return content;
   }
 }
