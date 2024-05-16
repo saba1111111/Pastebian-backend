@@ -7,6 +7,7 @@ import { UnexpectedErrorException } from 'libs/common/exceptions';
 import {
   ContentExpiredException,
   ContentNotFoundException,
+  DeletionFailedException,
 } from '../exceptions';
 
 jest.mock('ulid');
@@ -127,6 +128,94 @@ describe('ContentService', () => {
 
       expect(repository.findItemById).toHaveBeenCalledWith(id);
       expect(repository.deleteItem).toHaveBeenCalledWith({ id, expireAt });
+    });
+  });
+
+  describe('getItemOrThrow method tests', () => {
+    it('should return the content item if it exists', async () => {
+      const id = Math.random().toString();
+      const content = {
+        id,
+        content: 'Mock Content',
+        expireAt: Date.now() + 3600000,
+      };
+
+      jest.spyOn(repository, 'findItemById').mockResolvedValue(content);
+
+      const result = await service.getItemOrThrow(id);
+
+      expect(repository.findItemById).toHaveBeenCalledWith(id);
+      expect(result).toEqual(content);
+    });
+
+    it('should throw ContentNotFoundException if content does not exist', async () => {
+      const id = 'non-existent-id';
+
+      jest.spyOn(repository, 'findItemById').mockResolvedValue(null);
+
+      await expect(service.getItemOrThrow(id)).rejects.toThrow(
+        ContentNotFoundException,
+      );
+
+      expect(repository.findItemById).toHaveBeenCalledWith(id);
+    });
+  });
+
+  describe('deleteById method tests', () => {
+    it('should delete the content item if it exists and deletion is successful', async () => {
+      const id = Math.random().toString();
+      const content = {
+        id,
+        content: 'Mock Content',
+        expireAt: Date.now() + 3600000,
+      };
+
+      jest.spyOn(service, 'getItemOrThrow').mockResolvedValue(content);
+      jest.spyOn(repository, 'deleteItem').mockResolvedValue(1);
+
+      await expect(service.deleteById(id)).resolves.toBeUndefined();
+
+      expect(service.getItemOrThrow).toHaveBeenCalledWith(id);
+      expect(repository.deleteItem).toHaveBeenCalledWith({
+        id,
+        expireAt: content.expireAt,
+      });
+    });
+
+    it('should throw DeletionFailedException if no items were deleted', async () => {
+      const id = Math.random().toString();
+      const content = {
+        id,
+        content: 'Mock Content',
+        expireAt: Date.now() + 3600000,
+      };
+
+      jest.spyOn(service, 'getItemOrThrow').mockResolvedValue(content);
+      jest.spyOn(repository, 'deleteItem').mockResolvedValue(0);
+
+      await expect(service.deleteById(id)).rejects.toThrow(
+        DeletionFailedException,
+      );
+
+      expect(service.getItemOrThrow).toHaveBeenCalledWith(id);
+      expect(repository.deleteItem).toHaveBeenCalledWith({
+        id,
+        expireAt: content.expireAt,
+      });
+    });
+
+    it('should handle errors correctly', async () => {
+      const id = 'some-id';
+      const error = new Error('Some error');
+
+      jest.spyOn(service, 'getItemOrThrow').mockRejectedValue(error);
+
+      await expect(service.deleteById(id)).rejects.toThrow(
+        UnexpectedErrorException,
+      );
+
+      expect(service.getItemOrThrow).toHaveBeenCalledWith(id);
+      expect(repository.deleteItem).not.toHaveBeenCalled();
     });
   });
 });
