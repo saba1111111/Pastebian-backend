@@ -27,6 +27,6 @@ export class ContentController {
     status: 200,
   })
   public find(@Param('id') id: string): Promise<ContentEntity> {
-    return this.contentService.find(id);
+    return this.contentService.findById(id);
   }
 }

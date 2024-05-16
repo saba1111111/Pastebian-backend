@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import {
   DATABASE_CLIENT_TOKEN,
-  PASTEBIAN_CONTENT_TABLE_CONFIGURATION,
+  CONTENT_TABLE_CONFIGURATION,
   TABLES,
 } from '../constants';
 import { ENVS } from 'libs/common/constants/envs.constants';
@@ -25,9 +25,7 @@ export const DatabaseProviders = [
       try {
         await databaseClient.send(findTable(TABLES.PASTEBIAN_TABLE));
       } catch (error) {
-        await databaseClient.send(
-          createTable(PASTEBIAN_CONTENT_TABLE_CONFIGURATION),
-        );
+        await databaseClient.send(createTable(CONTENT_TABLE_CONFIGURATION));
       }
 
       return databaseClient;

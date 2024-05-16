@@ -7,9 +7,9 @@ export const createContentItemPrimaryKey = (
   const { id, expireAt } = ContentTableAttributes;
 
   return [
-    { column: id.name, value: input.id, type: id.type },
+    { name: id.name, value: input.id, type: id.type },
     {
-      column: expireAt.name,
+      name: expireAt.name,
       value: input.expireAt,
       type: expireAt.type,
     },

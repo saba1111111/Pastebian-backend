@@ -13,7 +13,7 @@ export const ContentTableAttributes: IContentTableAttributes = {
   content: { name: 'content', type: 'S' },
 };
 
-export const _CONTENT_TABLE_CONFIGURATION: ICreateTableCredentials = {
+export const CONTENT_TABLE_CONFIGURATION: ICreateTableCredentials = {
   TableName: TABLES.PASTEBIAN_TABLE,
   Columns: [
     {

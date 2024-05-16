@@ -10,17 +10,14 @@ import {
   IPutItemCredentials,
   IQueryItemsCredentials,
 } from '../interfaces';
-import {
-  transformAttributesToItem,
-  transformExpressionAttributeValues,
-} from '../helpers';
+import { transformAttributeValuesInDynamoFormat } from '../helpers';
 
 export const putItem = (input: IPutItemCredentials) => {
   const { Attributes, ExpressionAttributeValuesList, ...rest } = input;
 
-  const Item = transformAttributesToItem(Attributes);
+  const Item = transformAttributeValuesInDynamoFormat(Attributes);
 
-  const ExpressionAttributeValues = transformExpressionAttributeValues(
+  const ExpressionAttributeValues = transformAttributeValuesInDynamoFormat(
     ExpressionAttributeValuesList,
   );
 
@@ -28,7 +25,7 @@ export const putItem = (input: IPutItemCredentials) => {
 };
 
 export const getItem = (input: IGetItemCredentials) => {
-  const Key = transformAttributesToItem(input.Key);
+  const Key = transformAttributeValuesInDynamoFormat(input.Key);
 
   return new GetItemCommand({ ...input, Key });
 };
@@ -36,9 +33,9 @@ export const getItem = (input: IGetItemCredentials) => {
 export const deleteItem = (input: IDeleteItemCredentials) => {
   const { ExpressionAttributeValuesList, ...rest } = input;
 
-  const Key = transformAttributesToItem(input.Key);
+  const Key = transformAttributeValuesInDynamoFormat(input.Key);
 
-  const ExpressionAttributeValues = transformExpressionAttributeValues(
+  const ExpressionAttributeValues = transformAttributeValuesInDynamoFormat(
     ExpressionAttributeValuesList,
   );
 
@@ -48,7 +45,7 @@ export const deleteItem = (input: IDeleteItemCredentials) => {
 export const queryItems = (input: IQueryItemsCredentials) => {
   const { ExpressionAttributeValuesList, ...rest } = input;
 
-  const ExpressionAttributeValues = transformExpressionAttributeValues(
+  const ExpressionAttributeValues = transformAttributeValuesInDynamoFormat(
     ExpressionAttributeValuesList,
   );
 

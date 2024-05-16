@@ -34,9 +34,9 @@ export class ContentService {
     }
   }
 
-  public async find(id: string) {
+  public async findById(id: string) {
     try {
-      const content = await this.contentRepository.findItem(id);
+      const content = await this.contentRepository.findItemById(id);
       if (!content) {
         throw new ContentNotFoundException(id);
       }
@@ -46,6 +46,7 @@ export class ContentService {
           id,
           expireAt: content.expireAt,
         });
+
         throw new ContentExpiredException(id);
       }
 

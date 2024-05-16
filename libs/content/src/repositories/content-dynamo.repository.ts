@@ -19,6 +19,7 @@ import {
   queryItems,
 } from 'libs/database/commands';
 import { createContentItemPrimaryKey } from '../helpers';
+import { transformDynamoAttributesToItem } from 'libs/database/helpers';
 
 @Injectable()
 export class ContentDynamoRepository implements IContentRepository {
@@ -35,7 +36,7 @@ export class ContentDynamoRepository implements IContentRepository {
         const attribute = ContentTableAttributes[key];
 
         Attributes.push({
-          column: attribute.name,
+          name: attribute.name,
           value: input[key],
           type: attribute.type,
         });
@@ -60,28 +61,39 @@ export class ContentDynamoRepository implements IContentRepository {
     return this.dynamoClient.send(item);
   }
 
-  public async deleteItem(input: IDeleteItemCredentials): Promise<any> {
+  public async deleteItem(input: IDeleteItemCredentials): Promise<number> {
     const item = deleteItem({
       Key: createContentItemPrimaryKey(input),
       TableName: this.table,
     });
 
-    return this.dynamoClient.send(item);
+    const result = await this.dynamoClient.send(item);
+    if (result?.$metadata?.httpStatusCode === 200) {
+      return 1;
+    }
+    return 0;
   }
 
-  public findItemById(id: string) {
+  public async findItemById(id: string): Promise<IContent> {
     const { id: idAttribute } = ContentTableAttributes;
     const idExpression = `:${idAttribute.name}`;
 
     const items = queryItems({
       TableName: this.table,
       ConsistentRead: true,
-      KeyConditionExpression: `${idAttribute.name} = ${idExpression}'`,
+      KeyConditionExpression: `${idAttribute.name} = ${idExpression}`,
       ExpressionAttributeValuesList: [
         { name: `${idExpression}`, value: id, type: idAttribute.type },
       ],
     });
 
-    return this.dynamoClient.send(items);
+    const { Items } = await this.dynamoClient.send(items);
+    const item = Items?.[0];
+
+    if (!item) {
+      return null;
+    }
+
+    return transformDynamoAttributesToItem(item) as IContent;
   }
 }

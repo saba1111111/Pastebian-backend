@@ -3,14 +3,14 @@ import {
   ReturnConsumedCapacity,
   Select,
 } from '@aws-sdk/client-dynamodb';
-import { IExpressionAttributeValue } from './items.interface';
+import { IAttribute } from './items.interface';
 
 export interface IQueryItemsCredentials {
   TableName: string;
   ConsistentRead?: boolean;
   ExclusiveStartKey?: { [k: string]: AttributeValue };
   ExpressionAttributeNames?: { [k: string]: string };
-  ExpressionAttributeValuesList?: IExpressionAttributeValue[];
+  ExpressionAttributeValuesList?: IAttribute[];
   FilterExpression?: string;
   IndexName?: string;
   KeyConditionExpression?: string;

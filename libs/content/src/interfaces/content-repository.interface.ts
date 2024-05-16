@@ -7,4 +7,5 @@ export interface IContentRepository {
   create(input: ICreateContentDbCredentials): Promise<IContent>;
   findItem(input: IFindItemCredentials): Promise<IContent>;
   deleteItem(input: IDeleteItemCredentials): Promise<number>;
+  findItemById(id: string): Promise<IContent>;
 }

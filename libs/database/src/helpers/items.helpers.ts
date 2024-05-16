@@ -1,7 +1,7 @@
-import { IAttribute, IExpressionAttributeValue } from '../interfaces';
+import { IAttribute, ITransformDynamoAttributesToItem } from '../interfaces';
 
-export const transformExpressionAttributeValues = (
-  AttributeValues: IExpressionAttributeValue[],
+export const transformAttributeValuesInDynamoFormat = (
+  AttributeValues: IAttribute[],
 ) => {
   if (AttributeValues) {
     const ExpressionAttributeValues = {};
@@ -18,11 +18,18 @@ export const transformExpressionAttributeValues = (
   return;
 };
 
-export const transformAttributesToItem = (attributes: IAttribute[]) => {
-  const Item = {};
-  attributes.forEach((attribute) => {
-    Item[attribute.column] = { [attribute.type]: attribute.value };
-  });
+export const transformDynamoAttributesToItem = (
+  attributes: ITransformDynamoAttributesToItem,
+) => {
+  const item = {};
 
-  return Item;
+  for (const key in attributes) {
+    if (attributes.hasOwnProperty(key)) {
+      const attributeValues = attributes[key];
+      const value = Object.values(attributeValues)[0];
+      item[key] = value;
+    }
+  }
+
+  return item;
 };
