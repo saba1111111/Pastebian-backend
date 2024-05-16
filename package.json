@@ -30,6 +30,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "husky": "^9.0.11",
+    "ioredis": "^5.4.1",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "ulid": "^2.3.0"
@@ -80,7 +81,8 @@
     "moduleNameMapper": {
       "^libs/database(|/.*)$": "<rootDir>/libs/database/src/$1",
       "^libs/common(|/.*)$": "<rootDir>/libs/common/src/$1",
-      "^libs/content(|/.*)$": "<rootDir>/libs/content/src/$1"
+      "^libs/content(|/.*)$": "<rootDir>/libs/content/src/$1",
+      "^libs/cache(|/.*)$": "<rootDir>/libs/cache/src/$1"
     }
   }
 }

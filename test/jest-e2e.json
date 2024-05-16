@@ -16,6 +16,8 @@
     "libs/common/(.*)": "<rootDir>/../libs/common/src/$1",
     "libs/common": "<rootDir>/../libs/common/src",
     "libs/content/(.*)": "<rootDir>/../libs/content/src/$1",
-    "libs/content": "<rootDir>/../libs/content/src"
+    "libs/content": "<rootDir>/../libs/content/src",
+    "libs/cache/(.*)": "<rootDir>/../libs/cache/src/$1",
+    "libs/cache": "<rootDir>/../libs/cache/src"
   }
 }

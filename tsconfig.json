@@ -35,6 +35,12 @@
       ],
       "libs/content/*": [
         "libs/content/src/*"
+      ],
+      "libs/cache": [
+        "libs/cache/src"
+      ],
+      "libs/cache/*": [
+        "libs/cache/src/*"
       ]
     }
   }
