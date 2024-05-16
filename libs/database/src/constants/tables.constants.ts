@@ -1,29 +1,33 @@
-import { ICreateTableCredentials } from '../interfaces';
+import {
+  IContentTableAttributes,
+  ICreateTableCredentials,
+} from '../interfaces';
 
 export const TABLES = {
   PASTEBIAN_TABLE: 'pastebianContent',
 };
 
-const PastebianContentTableAttributes = {
-  id: 'id',
-  expireAt: 'expireAt',
+export const ContentTableAttributes: IContentTableAttributes = {
+  id: { name: 'id', type: 'S' },
+  expireAt: { name: 'expireAt', type: 'N' },
+  content: { name: 'content', type: 'S' },
 };
 
-export const PASTEBIAN_CONTENT_TABLE_CONFIGURATION: ICreateTableCredentials = {
+export const _CONTENT_TABLE_CONFIGURATION: ICreateTableCredentials = {
   TableName: TABLES.PASTEBIAN_TABLE,
   Columns: [
     {
-      AttributeName: PastebianContentTableAttributes.id,
-      AttributeType: 'S',
+      AttributeName: ContentTableAttributes.id.name,
+      AttributeType: ContentTableAttributes.id.type,
     },
     {
-      AttributeName: PastebianContentTableAttributes.expireAt,
-      AttributeType: 'N',
+      AttributeName: ContentTableAttributes.expireAt.name,
+      AttributeType: ContentTableAttributes.expireAt.type,
     },
   ],
   keys: {
-    PK: PastebianContentTableAttributes.id,
-    SK: PastebianContentTableAttributes.expireAt,
+    PK: ContentTableAttributes.id.name,
+    SK: ContentTableAttributes.expireAt.name,
   },
   BillingMode: {
     ProvisionedThroughput: {

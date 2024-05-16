@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ContentService } from 'libs/content';
 import { ContentRoutes } from 'libs/content/constants';
@@ -18,5 +18,15 @@ export class ContentController {
   })
   public create(@Body() input: CreateContentDto): Promise<ContentEntity> {
     return this.contentService.create(input);
+  }
+
+  @Get(ContentRoutes.content_id)
+  @HttpCode(200)
+  @ApiResponse({
+    type: ContentEntity,
+    status: 200,
+  })
+  public find(@Param('id') id: string): Promise<ContentEntity> {
+    return this.contentService.find(id);
   }
 }

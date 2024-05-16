@@ -6,8 +6,8 @@ import {
 } from '@aws-sdk/client-dynamodb';
 import { IAttribute, IExpressionAttributeValue } from './items.interface';
 
-export interface IPutItemCredentials {
-  Attributes: IAttribute[];
+export interface IDeleteItemCredentials {
+  Key: IAttribute[];
   TableName: string;
   ConditionExpression?: string;
   ExpressionAttributeNames?: { [k: string]: string };
