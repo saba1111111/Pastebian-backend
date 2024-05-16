@@ -11,6 +11,7 @@ describe('ContentController', () => {
   beforeEach(async () => {
     const serviceMock = {
       create: jest.fn(),
+      findById: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -63,6 +64,33 @@ describe('ContentController', () => {
 
       await expect(controller.create(input)).rejects.toThrow(error);
       expect(service.create).toHaveBeenCalledWith(input);
+    });
+  });
+
+  describe('find', () => {
+    it('should call contentService.findById with the correct parameter', async () => {
+      const id = 'some-id';
+      const result: ContentEntity = {
+        id,
+        content: 'Mock Content',
+        expireAt: Date.now() + 3600000,
+      };
+
+      jest.spyOn(service, 'findById').mockResolvedValue(result);
+
+      const response = await controller.find(id);
+
+      expect(service.findById).toHaveBeenCalledWith(id);
+      expect(response).toEqual(result);
+    });
+
+    it('should handle errors correctly', async () => {
+      const id = 'some-id';
+      const error = new Error('Some error');
+      jest.spyOn(service, 'findById').mockRejectedValue(error);
+
+      await expect(controller.find(id)).rejects.toThrow(error);
+      expect(service.findById).toHaveBeenCalledWith(id);
     });
   });
 });

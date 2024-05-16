@@ -4,6 +4,10 @@ import { CONTENT_REPOSITORY_TOKEN } from '../constants';
 import { IContentRepository } from '../interfaces';
 import * as ulidLibrary from 'ulid';
 import { UnexpectedErrorException } from 'libs/common/exceptions';
+import {
+  ContentExpiredException,
+  ContentNotFoundException,
+} from '../exceptions';
 
 jest.mock('ulid');
 
@@ -18,7 +22,11 @@ describe('ContentService', () => {
         ContentService,
         {
           provide: CONTENT_REPOSITORY_TOKEN,
-          useValue: { create: jest.fn() },
+          useValue: {
+            create: jest.fn(),
+            findItemById: jest.fn(),
+            deleteItem: jest.fn(),
+          },
         },
       ],
     }).compile();
@@ -36,7 +44,7 @@ describe('ContentService', () => {
     it('Should create content', async () => {
       const expireAt = new Date();
       const content = 'Mock Content';
-      const id = 'da31';
+      const id = Math.random().toString();
 
       ulid.mockReturnValue(id);
 
@@ -68,6 +76,57 @@ describe('ContentService', () => {
       expect(service.create({ expireAt, content })).rejects.toThrow(
         UnexpectedErrorException,
       );
+    });
+  });
+
+  describe('find content by id method tests.', () => {
+    it('Should find content item.', async () => {
+      const id = Math.random().toString();
+      const content = 'Mock Content.';
+      const expireAt = Date.now() + 3600000;
+
+      repository.findItemById = jest.fn().mockResolvedValue({
+        content,
+        id,
+        expireAt,
+      });
+
+      const result = await service.findById(id);
+
+      expect(repository.findItemById).toHaveBeenCalledWith(id);
+      expect(result).toEqual({ id, content, expireAt });
+    });
+
+    it('Should throw ContentNotFoundException when content is not found', async () => {
+      const id = Math.random().toString();
+
+      repository.findItemById = jest.fn().mockResolvedValue(null);
+
+      await expect(service.findById(id)).rejects.toThrow(
+        ContentNotFoundException,
+      );
+
+      expect(repository.findItemById).toHaveBeenCalledWith(id);
+    });
+
+    it('Should delete expired content and throw ContentExpiredException', async () => {
+      const id = Math.random().toString();
+      const content = 'Mock Content';
+      const expireAt = Date.now() - 3600000;
+
+      repository.findItemById = jest.fn().mockResolvedValue({
+        content,
+        id,
+        expireAt,
+      });
+      repository.deleteItem = jest.fn().mockResolvedValue(1);
+
+      await expect(service.findById(id)).rejects.toThrow(
+        ContentExpiredException,
+      );
+
+      expect(repository.findItemById).toHaveBeenCalledWith(id);
+      expect(repository.deleteItem).toHaveBeenCalledWith({ id, expireAt });
     });
   });
 });
