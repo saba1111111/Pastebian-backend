@@ -93,4 +93,24 @@ describe('ContentController', () => {
       expect(service.findById).toHaveBeenCalledWith(id);
     });
   });
+
+  describe('delete', () => {
+    it('should call contentService.deleteById with the correct parameter', async () => {
+      const id = 'some-id';
+      jest.spyOn(service, 'deleteById').mockResolvedValue();
+
+      await controller.delete(id);
+
+      expect(service.deleteById).toHaveBeenCalledWith(id);
+    });
+
+    it('should handle errors correctly', async () => {
+      const id = 'some-id';
+      const error = new Error('Some error');
+      jest.spyOn(service, 'deleteById').mockRejectedValue(error);
+
+      await expect(controller.delete(id)).rejects.toThrow(error);
+      expect(service.deleteById).toHaveBeenCalledWith(id);
+    });
+  });
 });
