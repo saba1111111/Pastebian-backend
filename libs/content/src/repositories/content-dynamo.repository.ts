@@ -17,9 +17,11 @@ import {
   getItem,
   putItem,
   queryItems,
+  scanItems,
 } from 'libs/database/commands';
-import { createContentItemPrimaryKey } from '../helpers';
+import { createContentItemPrimaryKey, parseToken } from '../helpers';
 import { transformDynamoAttributesToItem } from 'libs/database/helpers';
+import { IPaginationInput, IPaginationResponse } from 'libs/common/interfaces';
 
 @Injectable()
 export class ContentDynamoRepository implements IContentRepository {
@@ -95,5 +97,37 @@ export class ContentDynamoRepository implements IContentRepository {
     }
 
     return transformDynamoAttributesToItem(item) as IContent;
+  }
+
+  public async getExpiredItems(
+    input?: IPaginationInput,
+  ): Promise<IPaginationResponse> {
+    const { Limit, fields } = input || {};
+    const nextPageToken = parseToken(input.nextPageToken);
+
+    const items = scanItems({
+      TableName: this.table,
+      FilterExpression: `expireAt <= :now`,
+      ExpressionAttributeValuesList: [
+        { name: `:now`, value: Date.now(), type: 'N' },
+      ],
+      ...(Limit ? { Limit } : {}),
+
+      ...(nextPageToken ? { ExclusiveStartKey: nextPageToken } : {}),
+      ...(fields ? { ProjectionExpression: fields } : {}),
+    });
+
+    const { Items, LastEvaluatedKey } = await this.dynamoClient.send(items);
+
+    const newNextPageToken = LastEvaluatedKey
+      ? JSON.stringify(LastEvaluatedKey)
+      : null;
+
+    return {
+      items: Items
+        ? Items.map((item) => transformDynamoAttributesToItem(item) as IContent)
+        : [],
+      nextPageToken: newNextPageToken,
+    };
   }
 }

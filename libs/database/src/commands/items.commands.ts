@@ -3,12 +3,14 @@ import {
   GetItemCommand,
   PutItemCommand,
   QueryCommand,
+  ScanCommand,
 } from '@aws-sdk/client-dynamodb';
 import {
   IDeleteItemCredentials,
   IGetItemCredentials,
   IPutItemCredentials,
   IQueryItemsCredentials,
+  IScanItemsCredentials,
 } from '../interfaces';
 import { transformAttributeValuesInDynamoFormat } from '../helpers';
 
@@ -50,4 +52,14 @@ export const queryItems = (input: IQueryItemsCredentials) => {
   );
 
   return new QueryCommand({ ExpressionAttributeValues, ...rest });
+};
+
+export const scanItems = (input: IScanItemsCredentials) => {
+  const { ExpressionAttributeValuesList, ...rest } = input;
+
+  const ExpressionAttributeValues = transformAttributeValuesInDynamoFormat(
+    ExpressionAttributeValuesList,
+  );
+
+  return new ScanCommand({ ExpressionAttributeValues, ...rest });
 };

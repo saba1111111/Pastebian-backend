@@ -83,4 +83,19 @@ export class ContentService {
 
     return content;
   }
+
+  public deleteExpiredContentItems = async () => {
+    try {
+      // Check in cache nextPageToken.
+      // Iterate over the items and find expired ones.
+      const { items, nextPageToken } =
+        await this.contentRepository.getExpiredItems();
+
+      // With batch delete request delete expired items (retry mechanism with bull queue).
+
+      return { items, nextPageToken };
+    } catch (error) {
+      //
+    }
+  };
 }
