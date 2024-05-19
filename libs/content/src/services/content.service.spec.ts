@@ -40,6 +40,7 @@ describe('ContentService', () => {
           useValue: {
             get: jest.fn(),
             set: jest.fn(),
+            del: jest.fn(),
           },
         },
       ],
@@ -414,6 +415,51 @@ describe('ContentService', () => {
         'Error when deleteExpiredContentItems cron job running.',
         error,
       );
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('invalidateCacheAfterDeleteItem method tests', () => {
+    it('should invalidate the cache if the key exists', async () => {
+      const key = 'existing-key';
+
+      (cacheService.del as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.invalidateCacheAfterDeleteItem(key);
+
+      expect(cacheService.del).toHaveBeenCalledWith(key);
+      expect(result).toBe(true);
+    });
+
+    it('should return false if the key does not exist', async () => {
+      const key = 'non-existing-key';
+
+      (cacheService.del as jest.Mock).mockResolvedValue(false);
+
+      const result = await service.invalidateCacheAfterDeleteItem(key);
+
+      expect(cacheService.del).toHaveBeenCalledWith(key);
+      expect(result).toBe(true);
+    });
+
+    it('should handle errors gracefully and return false', async () => {
+      const key = 'key-with-error';
+
+      (cacheService.del as jest.Mock).mockRejectedValue(
+        new Error('Test error'),
+      );
+
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      const result = await service.invalidateCacheAfterDeleteItem(key);
+
+      expect(cacheService.del).toHaveBeenCalledWith(key);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        `Failed to invalidate cache for key ${key}:`,
+        expect.any(Error),
+      );
+      expect(result).toBe(false);
 
       consoleErrorSpy.mockRestore();
     });

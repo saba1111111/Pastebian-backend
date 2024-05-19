@@ -74,6 +74,8 @@ export class ContentService {
         throw new DeletionFailedException(id);
       }
 
+      await this.invalidateCacheAfterDeleteItem(id);
+
       return;
     } catch (error) {
       handleError(error);
@@ -156,5 +158,20 @@ export class ContentService {
     }
 
     return unprocessedItems;
+  }
+
+  public async invalidateCacheAfterDeleteItem(
+    deletedItemKey: string,
+  ): Promise<boolean> {
+    try {
+      await this.cacheManager.del(deletedItemKey);
+      return true;
+    } catch (error) {
+      console.error(
+        `Failed to invalidate cache for key ${deletedItemKey}:`,
+        error,
+      );
+      return false;
+    }
   }
 }
