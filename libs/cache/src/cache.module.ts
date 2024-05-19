@@ -11,6 +11,7 @@ import { ENVS } from 'libs/common/constants';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
+        max: 30,
         store: redisStore,
         host: configService.get<string>(ENVS.REDIS_HOST),
         port: Number(configService.get<string>(ENVS.REDIS_PORT)),
