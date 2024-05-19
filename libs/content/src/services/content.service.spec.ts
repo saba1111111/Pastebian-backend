@@ -9,8 +9,9 @@ import {
   ContentNotFoundException,
   DeletionFailedException,
 } from '../exceptions';
-import { CACHE_SERVICE_TOKEN, CacheStaticKeys } from 'libs/cache/constants';
-import { ICacheService } from 'libs/cache/interfaces';
+import { CacheStaticKeys } from 'libs/cache/constants';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 jest.mock('ulid');
 
@@ -18,7 +19,7 @@ describe('ContentService', () => {
   let service: ContentService;
   let repository: IContentRepository;
   let ulid: jest.Mock;
-  let cacheService: ICacheService;
+  let cacheService: Cache;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,10 +36,10 @@ describe('ContentService', () => {
           },
         },
         {
-          provide: CACHE_SERVICE_TOKEN,
+          provide: CACHE_MANAGER,
           useValue: {
             get: jest.fn(),
-            add: jest.fn(),
+            set: jest.fn(),
           },
         },
       ],
@@ -47,7 +48,7 @@ describe('ContentService', () => {
     service = module.get<ContentService>(ContentService);
     repository = module.get<IContentRepository>(CONTENT_REPOSITORY_TOKEN);
     ulid = ulidLibrary.ulid as jest.Mock;
-    cacheService = module.get<ICacheService>(CACHE_SERVICE_TOKEN);
+    cacheService = module.get<Cache>(CACHE_MANAGER);
   });
 
   it('should be defined', () => {
@@ -352,7 +353,7 @@ describe('ContentService', () => {
         fields: 'id, expireAt',
         Limit: 20,
       });
-      expect(cacheService.add).toHaveBeenCalledWith(
+      expect(cacheService.set).toHaveBeenCalledWith(
         CacheStaticKeys.SCAN_ITEMS_NEXT_PAGE_TOKEN,
         'newToken',
         60,
@@ -391,7 +392,7 @@ describe('ContentService', () => {
         fields: 'id, expireAt',
         Limit: 20,
       });
-      expect(cacheService.add).toHaveBeenCalledWith(
+      expect(cacheService.set).toHaveBeenCalledWith(
         CacheStaticKeys.SCAN_ITEMS_NEXT_PAGE_TOKEN,
         'newToken',
         60,

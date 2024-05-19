@@ -13,17 +13,17 @@ import {
   DeletionFailedException,
 } from '../exceptions';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { CACHE_SERVICE_TOKEN, CacheStaticKeys } from 'libs/cache/constants';
-import { ICacheService } from 'libs/cache/interfaces';
+import { CacheStaticKeys } from 'libs/cache/constants';
 import { ulid } from 'ulid';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class ContentService {
   constructor(
     @Inject(CONTENT_REPOSITORY_TOKEN)
     private readonly contentRepository: IContentRepository,
-    @Inject(CACHE_SERVICE_TOKEN)
-    private readonly cacheService: ICacheService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   public async create(credentials: ICreateContentServiceCredentials) {
@@ -95,7 +95,7 @@ export class ContentService {
     try {
       const { SCAN_ITEMS_NEXT_PAGE_TOKEN } = CacheStaticKeys;
 
-      const nextPageToken = await this.cacheService.get<string>(
+      const nextPageToken = await this.cacheManager.get<string>(
         SCAN_ITEMS_NEXT_PAGE_TOKEN,
       );
 
@@ -106,7 +106,7 @@ export class ContentService {
       });
 
       if (expiredItemsData?.nextPageToken) {
-        await this.cacheService.add(
+        await this.cacheManager.set(
           SCAN_ITEMS_NEXT_PAGE_TOKEN,
           expiredItemsData.nextPageToken,
           60,

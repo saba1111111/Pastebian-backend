@@ -3,6 +3,7 @@ import { ContentController } from './content.controller';
 import { ContentService } from 'libs/content';
 import { CreateContentDto } from 'libs/content/dtos';
 import { ContentEntity } from 'libs/content/entities';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('ContentController', () => {
   let controller: ContentController;
@@ -21,6 +22,13 @@ describe('ContentController', () => {
         {
           provide: ContentService,
           useValue: serviceMock,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+          },
         },
       ],
     }).compile();

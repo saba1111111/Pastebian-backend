@@ -6,12 +6,14 @@ import {
   HttpCode,
   Param,
   Post,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ContentService } from 'libs/content';
 import { ContentRoutes } from 'libs/content/constants';
 import { CreateContentDto } from 'libs/content/dtos';
 import { ContentEntity } from 'libs/content/entities';
+import { ContentCacheInterceptor } from 'libs/content/interceptors';
 
 @ApiTags(ContentRoutes.controller)
 @Controller(ContentRoutes.controller)
@@ -29,6 +31,7 @@ export class ContentController {
   }
 
   @Get(ContentRoutes.content_id)
+  @UseInterceptors(ContentCacheInterceptor)
   @HttpCode(200)
   @ApiResponse({
     type: ContentEntity,
