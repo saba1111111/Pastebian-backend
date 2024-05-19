@@ -9,6 +9,8 @@ import {
   ContentNotFoundException,
   DeletionFailedException,
 } from '../exceptions';
+import { CACHE_SERVICE_TOKEN, CacheStaticKeys } from 'libs/cache/constants';
+import { ICacheService } from 'libs/cache/interfaces';
 
 jest.mock('ulid');
 
@@ -16,6 +18,7 @@ describe('ContentService', () => {
   let service: ContentService;
   let repository: IContentRepository;
   let ulid: jest.Mock;
+  let cacheService: ICacheService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,6 +30,15 @@ describe('ContentService', () => {
             create: jest.fn(),
             findItemById: jest.fn(),
             deleteItem: jest.fn(),
+            deleteItems: jest.fn(),
+            getExpiredItems: jest.fn(),
+          },
+        },
+        {
+          provide: CACHE_SERVICE_TOKEN,
+          useValue: {
+            get: jest.fn(),
+            add: jest.fn(),
           },
         },
       ],
@@ -35,6 +47,7 @@ describe('ContentService', () => {
     service = module.get<ContentService>(ContentService);
     repository = module.get<IContentRepository>(CONTENT_REPOSITORY_TOKEN);
     ulid = ulidLibrary.ulid as jest.Mock;
+    cacheService = module.get<ICacheService>(CACHE_SERVICE_TOKEN);
   });
 
   it('should be defined', () => {
@@ -216,6 +229,192 @@ describe('ContentService', () => {
 
       expect(service.getItemOrThrow).toHaveBeenCalledWith(id);
       expect(repository.deleteItem).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('retryUnprocessedItemsWithExponentialBackoff method tests', () => {
+    it('Should retry and return the same list of unprocessed items.', async () => {
+      const unprocessedItems = [
+        { id: Math.random().toString(), expireAt: Date.now() + 3600000 },
+      ];
+      const maxRetries = 3;
+
+      repository.deleteItems = jest
+        .fn()
+        .mockResolvedValue({ unprocessedItems });
+
+      const result = await service.retryUnprocessedItemsWithExponentialBackoff(
+        unprocessedItems,
+        maxRetries,
+      );
+
+      expect(repository.deleteItems).toHaveBeenCalledTimes(maxRetries);
+      expect(result).toEqual(unprocessedItems);
+    });
+
+    it('Should retry once and return empty list of unprocessed items.', async () => {
+      const unprocessedItems = [
+        { id: Math.random().toString(), expireAt: Date.now() + 3600000 },
+      ];
+      repository.deleteItems = jest
+        .fn()
+        .mockResolvedValue({ unprocessedItems: [] });
+
+      const result =
+        await service.retryUnprocessedItemsWithExponentialBackoff(
+          unprocessedItems,
+        );
+
+      expect(repository.deleteItems).toHaveBeenCalledTimes(1);
+      expect(result).toEqual([]);
+    });
+
+    it('Should retry twice and return empty list of unprocessed items.', async () => {
+      const unprocessedItems = [
+        { id: Math.random().toString(), expireAt: Date.now() + 3600000 },
+      ];
+      repository.deleteItems = jest
+        .fn()
+        .mockResolvedValueOnce({ unprocessedItems: unprocessedItems })
+        .mockResolvedValueOnce({ unprocessedItems: [] });
+
+      const result =
+        await service.retryUnprocessedItemsWithExponentialBackoff(
+          unprocessedItems,
+        );
+
+      expect(repository.deleteItems).toHaveBeenCalledTimes(2);
+      expect(result).toEqual([]);
+    });
+
+    it('Should return empty list of unprocessed items immediately.', async () => {
+      const unprocessedItems = [];
+      repository.deleteItems = jest
+        .fn()
+        .mockResolvedValueOnce({ unprocessedItems });
+
+      const result =
+        await service.retryUnprocessedItemsWithExponentialBackoff(
+          unprocessedItems,
+        );
+
+      expect(repository.deleteItems).toHaveBeenCalledTimes(0);
+      expect(result).toEqual([]);
+    });
+
+    it('Should handle errors from deleteItems and return the reminding unprocessedItems.', async () => {
+      const unprocessedItems = [
+        { id: Math.random().toString(), expireAt: Date.now() + 3600000 },
+      ];
+
+      repository.deleteItems = jest
+        .fn()
+        .mockRejectedValue(new Error('Test error'));
+
+      const result =
+        await service.retryUnprocessedItemsWithExponentialBackoff(
+          unprocessedItems,
+        );
+
+      expect(result).toEqual(unprocessedItems);
+      expect(repository.deleteItems).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('deleteExpiredContentItems method tests', () => {
+    it('should process expired items.', async () => {
+      const expiredItems = [
+        { id: 'item1', expireAt: Date.now() - 3600000 },
+        { id: 'item2', expireAt: Date.now() - 3600000 },
+      ];
+      const nextPageToken = 'someToken';
+
+      (cacheService.get as jest.Mock).mockResolvedValue(nextPageToken);
+      (repository.getExpiredItems as jest.Mock).mockResolvedValue({
+        items: expiredItems,
+        nextPageToken: 'newToken',
+      });
+      (repository.deleteItems as jest.Mock).mockResolvedValue({
+        unprocessedItems: [],
+      });
+
+      const retryMock = jest
+        .spyOn(service, 'retryUnprocessedItemsWithExponentialBackoff')
+        .mockResolvedValue([]);
+
+      await service.deleteExpiredContentItems();
+
+      expect(cacheService.get).toHaveBeenCalledWith(
+        CacheStaticKeys.SCAN_ITEMS_NEXT_PAGE_TOKEN,
+      );
+      expect(repository.getExpiredItems).toHaveBeenCalledWith({
+        nextPageToken,
+        fields: 'id, expireAt',
+        Limit: 20,
+      });
+      expect(cacheService.add).toHaveBeenCalledWith(
+        CacheStaticKeys.SCAN_ITEMS_NEXT_PAGE_TOKEN,
+        'newToken',
+        60,
+      );
+      expect(repository.deleteItems).toHaveBeenCalledWith(expiredItems);
+      expect(retryMock).not.toHaveBeenCalled();
+    });
+
+    it('should handle unprocessed items with exponential backoff', async () => {
+      const expiredItems = [
+        { id: 'item1', expireAt: Date.now() - 3600000 },
+        { id: 'item2', expireAt: Date.now() - 3600000 },
+      ];
+      const nextPageToken = 'someToken';
+
+      (cacheService.get as jest.Mock).mockResolvedValue(nextPageToken);
+      (repository.getExpiredItems as jest.Mock).mockResolvedValue({
+        items: expiredItems,
+        nextPageToken: 'newToken',
+      });
+      (repository.deleteItems as jest.Mock).mockResolvedValue({
+        unprocessedItems: expiredItems,
+      });
+
+      const retryMock = jest
+        .spyOn(service, 'retryUnprocessedItemsWithExponentialBackoff')
+        .mockResolvedValue([]);
+
+      await service.deleteExpiredContentItems();
+
+      expect(cacheService.get).toHaveBeenCalledWith(
+        CacheStaticKeys.SCAN_ITEMS_NEXT_PAGE_TOKEN,
+      );
+      expect(repository.getExpiredItems).toHaveBeenCalledWith({
+        nextPageToken,
+        fields: 'id, expireAt',
+        Limit: 20,
+      });
+      expect(cacheService.add).toHaveBeenCalledWith(
+        CacheStaticKeys.SCAN_ITEMS_NEXT_PAGE_TOKEN,
+        'newToken',
+        60,
+      );
+      expect(repository.deleteItems).toHaveBeenCalledWith(expiredItems);
+      expect(retryMock).toHaveBeenCalledWith(expiredItems);
+    });
+
+    it('should handle errors gracefully', async () => {
+      const error = new Error('Test error');
+
+      (repository.getExpiredItems as jest.Mock).mockRejectedValue(error);
+
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      await service.deleteExpiredContentItems();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Error when deleteExpiredContentItems cron job running.',
+        error,
+      );
+
+      consoleErrorSpy.mockRestore();
     });
   });
 });

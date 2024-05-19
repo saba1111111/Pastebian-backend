@@ -4,7 +4,7 @@ import {
   IContentRepository,
   ICreateContentDbCredentials,
   IDeleteItemCredentials,
-  IFindItemCredentials,
+  IIdentifyContentItem,
 } from '../interfaces';
 import {
   ContentTableAttributes,
@@ -13,6 +13,7 @@ import {
 } from 'libs/database/constants';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
+  batchWriteItems,
   deleteItem,
   getItem,
   putItem,
@@ -20,7 +21,10 @@ import {
   scanItems,
 } from 'libs/database/commands';
 import { createContentItemPrimaryKey, parseToken } from '../helpers';
-import { transformDynamoAttributesToItem } from 'libs/database/helpers';
+import {
+  transformDynamoAttributesToItem,
+  transformDeleteRequestUnprocessedItems,
+} from 'libs/database/helpers';
 import { IPaginationInput, IPaginationResponse } from 'libs/common/interfaces';
 
 @Injectable()
@@ -53,7 +57,7 @@ export class ContentDynamoRepository implements IContentRepository {
     return input;
   }
 
-  public findItem(input: IFindItemCredentials): Promise<any> {
+  public findItem(input: IIdentifyContentItem): Promise<any> {
     const item = getItem({
       TableName: this.table,
       Key: createContentItemPrimaryKey(input),
@@ -112,7 +116,6 @@ export class ContentDynamoRepository implements IContentRepository {
         { name: `:now`, value: Date.now(), type: 'N' },
       ],
       ...(Limit ? { Limit } : {}),
-
       ...(nextPageToken ? { ExclusiveStartKey: nextPageToken } : {}),
       ...(fields ? { ProjectionExpression: fields } : {}),
     });
@@ -129,5 +132,60 @@ export class ContentDynamoRepository implements IContentRepository {
         : [],
       nextPageToken: newNextPageToken,
     };
+  }
+
+  public async deleteItems(items: IIdentifyContentItem[]) {
+    try {
+      const deleteCommands = items.map((item) => ({
+        DeleteRequest: {
+          Key: {
+            id: { S: item.id },
+            expireAt: { N: `${item.expireAt}` },
+          },
+        },
+      }));
+
+      const result = await this.dynamoClient.send(
+        batchWriteItems({
+          RequestItems: {
+            [this.table]: deleteCommands,
+          },
+        }),
+      );
+
+      const unprocessedItems =
+        transformDeleteRequestUnprocessedItems<IIdentifyContentItem>({
+          table: this.table,
+          unprocessedDynamoItems: result.UnprocessedItems,
+        });
+
+      return { unprocessedItems };
+    } catch (error) {}
+  }
+
+  public async createExpiredTestItems(): Promise<any> {
+    const items = Array.from({ length: 25 }, (_, i) => ({
+      id: `test-id-${i}`,
+      expireAt: Date.now() - 3600000,
+      content: `content-${i}`,
+    }));
+
+    const putCommands = items.map((item) => ({
+      PutRequest: {
+        Item: {
+          id: { S: item.id },
+          expireAt: { N: item.expireAt.toString() },
+          content: { S: item.content },
+        },
+      },
+    }));
+
+    return this.dynamoClient.send(
+      batchWriteItems({
+        RequestItems: {
+          [this.table]: putCommands,
+        },
+      }),
+    );
   }
 }

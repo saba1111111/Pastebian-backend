@@ -9,5 +9,5 @@ npm run format || (echo "Formatting failed!" && exit 1)
 echo "Linting code..."
 npm run lint || (echo "Linting failed!" && exit 1)
 
-# echo "Running tests..."
-# npm test || (echo "Tests failed!" && exit 1)
+echo "Running tests..."
+npm test || (echo "Tests failed!" && exit 1)

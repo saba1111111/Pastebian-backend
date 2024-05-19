@@ -1,4 +1,5 @@
 import {
+  BatchWriteItemCommand,
   DeleteItemCommand,
   GetItemCommand,
   PutItemCommand,
@@ -6,6 +7,7 @@ import {
   ScanCommand,
 } from '@aws-sdk/client-dynamodb';
 import {
+  IBatchWriteItems,
   IDeleteItemCredentials,
   IGetItemCredentials,
   IPutItemCredentials,
@@ -62,4 +64,8 @@ export const scanItems = (input: IScanItemsCredentials) => {
   );
 
   return new ScanCommand({ ExpressionAttributeValues, ...rest });
+};
+
+export const batchWriteItems = (input: IBatchWriteItems) => {
+  return new BatchWriteItemCommand(input);
 };

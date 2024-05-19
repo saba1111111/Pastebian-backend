@@ -1,4 +1,8 @@
-import { IAttribute, ITransformDynamoAttributesToItem } from '../interfaces';
+import {
+  IAttribute,
+  ITransformDynamoAttributesToItem,
+  ITransformDynamoUnProcessedItemsInput,
+} from '../interfaces';
 
 export const transformAttributeValuesInDynamoFormat = (
   AttributeValues: IAttribute[],
@@ -33,3 +37,25 @@ export const transformDynamoAttributesToItem = (
 
   return item;
 };
+
+export function transformDeleteRequestUnprocessedItems<KeyAttributes>(
+  input: ITransformDynamoUnProcessedItemsInput,
+) {
+  const { table, unprocessedDynamoItems } = input;
+
+  const unprocessedItems = [];
+
+  unprocessedDynamoItems[table]?.forEach((unprocessedDynamoItem) => {
+    const primaryKey = unprocessedDynamoItem.DeleteRequest.Key;
+
+    const itemKey = {};
+    for (const attribute in primaryKey) {
+      const [attributeValue] = Object.values(primaryKey[attribute]);
+
+      itemKey[attribute] = attributeValue;
+    }
+    unprocessedItems.push(itemKey);
+  });
+
+  return unprocessedItems as KeyAttributes[];
+}

@@ -4,20 +4,26 @@ import {
   IContent,
   IContentRepository,
   ICreateContentServiceCredentials,
+  IIdentifyContentItem,
 } from '../interfaces';
-import { ulid } from 'ulid';
 import { handleError } from 'libs/common/helpers';
 import {
   ContentExpiredException,
   ContentNotFoundException,
   DeletionFailedException,
 } from '../exceptions';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { CACHE_SERVICE_TOKEN, CacheStaticKeys } from 'libs/cache/constants';
+import { ICacheService } from 'libs/cache/interfaces';
+import { ulid } from 'ulid';
 
 @Injectable()
 export class ContentService {
   constructor(
     @Inject(CONTENT_REPOSITORY_TOKEN)
     private readonly contentRepository: IContentRepository,
+    @Inject(CACHE_SERVICE_TOKEN)
+    private readonly cacheService: ICacheService,
   ) {}
 
   public async create(credentials: ICreateContentServiceCredentials) {
@@ -84,18 +90,71 @@ export class ContentService {
     return content;
   }
 
-  public deleteExpiredContentItems = async () => {
+  @Cron(CronExpression.EVERY_MINUTE)
+  public async deleteExpiredContentItems() {
     try {
-      // Check in cache nextPageToken.
-      // Iterate over the items and find expired ones.
-      const { items, nextPageToken } =
-        await this.contentRepository.getExpiredItems();
+      const { SCAN_ITEMS_NEXT_PAGE_TOKEN } = CacheStaticKeys;
 
-      // With batch delete request delete expired items (retry mechanism with bull queue).
+      const nextPageToken = await this.cacheService.get<string>(
+        SCAN_ITEMS_NEXT_PAGE_TOKEN,
+      );
 
-      return { items, nextPageToken };
+      const expiredItemsData = await this.contentRepository.getExpiredItems({
+        nextPageToken,
+        fields: 'id, expireAt',
+        Limit: 20,
+      });
+
+      if (expiredItemsData?.nextPageToken) {
+        await this.cacheService.add(
+          SCAN_ITEMS_NEXT_PAGE_TOKEN,
+          expiredItemsData.nextPageToken,
+          60,
+        );
+      }
+
+      if (expiredItemsData.items?.length) {
+        const { unprocessedItems } = await this.contentRepository.deleteItems(
+          expiredItemsData.items,
+        );
+
+        if (unprocessedItems.length) {
+          await this.retryUnprocessedItemsWithExponentialBackoff(
+            unprocessedItems,
+          );
+        }
+      }
     } catch (error) {
-      //
+      console.error(
+        'Error when deleteExpiredContentItems cron job running.',
+        error,
+      );
     }
-  };
+  }
+
+  public async retryUnprocessedItemsWithExponentialBackoff(
+    items: IIdentifyContentItem[],
+    maxRetries = 5,
+  ) {
+    let attempts = 0;
+    let unprocessedItems = items;
+
+    try {
+      while (unprocessedItems.length && attempts < maxRetries) {
+        const result =
+          await this.contentRepository.deleteItems(unprocessedItems);
+        unprocessedItems = result.unprocessedItems;
+
+        if (unprocessedItems.length) {
+          attempts++;
+          const delay = Math.pow(2, attempts) * 100;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    } catch (error) {
+      console.error('Error during retrying unprocessed items.', error); // TODO (better error handling)
+    }
+
+    return unprocessedItems;
+  }
 }

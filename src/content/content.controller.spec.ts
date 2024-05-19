@@ -12,6 +12,7 @@ describe('ContentController', () => {
     const serviceMock = {
       create: jest.fn(),
       findById: jest.fn(),
+      deleteById: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

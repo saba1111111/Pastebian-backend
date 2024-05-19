@@ -6,3 +6,5 @@ export * from './query-items-credentials.interface';
 export * from './items.interface';
 export * from './content-table-attributes.interface';
 export * from './transform-dynamo-attributes-to-item-credentials.interface';
+export * from './batch-write-items-credentials.interface';
+export * from './transform-dynamo-unprocessed-items-input.interface';
