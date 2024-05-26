@@ -4,7 +4,8 @@ This repository contains the backend part of the Pastebain project. To view the 
 
 Ensure you have Docker and Docker Compose installed on your system. You can download and install them from the Docker and Docker Compose websites. First, copy the .env.example file and create a .env file by running cp .env.example .env. Open the newly created .env file, paste the contents from .env.example, and adjust any necessary environment variables. To run the project using Docker Compose, execute the command docker-compose up. This will start the application and all its required services in Docker containers.
 
-Technical Overview
+## Technical Overview
+
 The server is built using Nest.js, with DynamoDB as the database and Redis for caching. Development and deployment are managed with Docker and Docker Compose, ensuring a consistent and isolated environment. All methods are unit tested using Jest.
 
 Database and Caching
