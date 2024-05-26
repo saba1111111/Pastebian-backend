@@ -26,7 +26,7 @@ export class ContentController {
     type: ContentEntity,
     status: 201,
   })
-  public create(@Body() input: CreateContentDto): Promise<any> {
+  public create(@Body() input: CreateContentDto): Promise<ContentEntity> {
     return this.contentService.create(input);
   }
 
